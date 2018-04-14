@@ -1,0 +1,235 @@
+version: "2"
+services:
+  portainer:
+    image: portainer/portainer
+    container_name: portainer
+    restart: unless-stopped
+    command: --templates http://templates/templates.json
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${USERDIR}/portainer/data:/data
+    ports:
+      - "9000:9000"
+    environment:
+      - TZ=${TZ}
+
+    # ----------------------------------------
+    # DELUGEVPN
+    # Deluge Torrent Client + PIA VPN
+    # ----------------------------------------
+  arch-delugevpn:
+        image: binhex/arch-delugevpn
+        container_name: delugevpn
+        restart: unless-stopped
+        network_mode: 'bridge'
+        ports:
+            - '8112:8112'
+            - '8118:8118'
+            - '58846:58846'
+            - '58946:58946'
+        cap_add:
+            - NET_ADMIN
+        devices:
+            - /dev/net/tun
+        environment:
+            - VPN_ENABLED=yes
+            - VPN_USER=p4285743
+            - VPN_PASS=K6siPuKk9S
+            - VPN_PORT=1198
+            - VPN_PROTOCOL=udp
+            - VPN_DEVICE_TYPE=tun
+            - VPN_PROV=pia
+            - STRONG_CERTS=no
+            - ENABLE_PRIVOXY=yes
+            - STRICT_PORT_FORWARD=yes
+            - LAN_NETWORK=192.168.86.0/24
+            - NAME_SERVERS=37.235.1.174,8.8.8.8,37.235.1.177,8.8.4.4
+            - DEBUG=false
+            - PUID=${PUID}
+            - PGID=${PGID}
+        volumes:
+            - '${USERDIR}/downloads:/data'
+            - '${USERDIR}/deluge-vpn/config:/config'
+            - '/etc/localtime:/etc/localtime:ro'
+
+    # ----------------------------------------
+    # NETDATA
+    # System Resource Monitoring Service
+    # ----------------------------------------
+  netdata:
+        image: titpetric/netdata
+        container_name: netdata
+        restart: unless-stopped
+        network_mode: 'bridge'
+        ports:
+            - '19999:19999'
+        environment:
+            - PUID=${PUID}
+            - PGID=${PGID}
+        cap_add:
+            - SYS_PTRACE
+        volumes:
+            - '/proc:/host/proc:ro'
+            - '/sys:/host/sys:ro'
+            - '/etc/localtime:/etc/localtime:ro'
+            - '/var/run/docker.sock:/var/run/docker.sock'
+
+  radarr:
+    image: "linuxserver/radarr"
+    container_name: "radarr"
+    volumes:
+      - ${USERDIR}/radarr/config:/config
+      - ${USERDIR}/downloads/completed:/data/completed
+      - ${USERDIR}/media/movies:/movies
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/certs:/certs
+    ports:
+      - "7878:7878"
+      - "7879:7879"
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+#Sonarr - TV Show Download and Management
+  sonarr:
+    image: "linuxserver/sonarr"
+    container_name: "sonarr"
+    volumes:
+      - ${USERDIR}/sonarr/config:/config
+      - ${USERDIR}/downloads/completed:/data/completed
+      - ${USERDIR}/media/tvshows:/tv
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/certs:/certs
+    ports:
+      - "8989:8989"
+      - "8990:8990"
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+#Media Server - Plex
+  plexms:
+    container_name: plexms
+    restart: unless-stopped
+    image: plexinc/pms-docker
+    volumes:
+      - ${USERDIR}/plexms/config:/config
+      - ${USERDIR}/downloads/plex_tmp:/transcode
+      - ${USERDIR}/media:/media
+      - ${USERDIR}/docker/certs:/certs
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "32400:32400" 
+      - "3005:3005" 
+      - "8324:8324" 
+      - "32469:32469" 
+      - "1900:1900/udp" 
+      - "32410:32410/udp" 
+      - "32412:32412/udp" 
+      - "32413:32413/udp" 
+      - "32414:32414/udp" 
+    environment:
+      - TZ=${TZ}
+      - HOSTNAME="Docker Plex"
+      - PLEX_CLAIM="CLAIM-QSXDHGPUSWQFTQNJWPQN"
+      - PLEX_UID=${PUID}
+      - PLEX_GID=${PGID}
+      - ADVERTISE_IP="http://192.168.86.205:32400/"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.port=32400"
+      - "traefik.frontend.rule=Host:plex.teratux.com"
+
+#Tautulli - Monitor Plex Usage
+  tautulli:
+    container_name: tautulli
+    restart: unless-stopped
+    image: linuxserver/tautulli
+    volumes:
+      - ${USERDIR}/tautulli/config:/config
+      - /content/plexms/config/Library/Application Support/Plex Media Server/Logs:/logs:ro
+      - ${USERDIR}/docker/certs:/certs
+    ports:
+      - "8181:8181"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+#Ombi - Accept Media Requests from From Friends and Family
+  ombi:
+    container_name: ombi
+    restart: unless-stopped
+    image: linuxserver/ombi
+    volumes:
+      - ${USERDIR}/ombi/config:/config
+      - ${USERDIR}/docker/certs:/certs
+    ports:
+      - "3579:3579"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ} 
+
+#Jackett - Torrent Proxy
+  jackett:
+    image: "linuxserver/jackett"
+    container_name: "jackett"
+    volumes:
+      - ${USERDIR}/jackett/config:/config
+      - ${USERDIR}/downloads/completed:/downloads
+      - "/etc/localtime:/etc/localtime:ro"
+      - ${USERDIR}/docker/certs:/certs
+    ports:
+      - "9117:9117"
+    restart: unless-stopped
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+#Watchtower - Automatic Update of Containers/Apps
+  watchtower:
+    container_name: watchtower
+    restart: unless-stopped
+    image: v2tec/watchtower
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --schedule "0 0 4 * * *" --cleanup
+
+#SyncThing - Backup
+  syncthing:
+    container_name: syncthing
+    restart: unless-stopped
+    image: linuxserver/syncthing
+    volumes:
+      - /content/syncthing/config:/config
+      - /usbextdrive/backups:/backups
+    ports:
+      - "8384:8384"
+      - "22000:22000"
+      - "21027:21027/udp"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
+
+#Organizr - Portal
+  organizr:
+    container_name: organizr
+    restart: unless-stopped
+    image: lsiocommunity/organizr
+    volumes:
+      - /content/organizr/config:/config
+    ports:
+      - "80:80"
+    environment:
+      - PUID=${PUID}
+      - PGID=${PGID}
+      - TZ=${TZ}
