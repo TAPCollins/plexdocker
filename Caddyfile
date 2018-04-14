@@ -1,0 +1,52 @@
+home.teratux.com {  #replace domain.com with your site 
+ 
+# The below listed starup command opens php when you open Caddy Server
+#  startup /caddy/php/php-cgi -b 127.0.0.1:9000 &
+ 
+# Sets the root folder for your website
+  ext .html .htm .php
+  root /caddy/www
+  
+  gzip
+
+# This is an example for accessing sonarr at http://domain.com/sonarr but 
+# can be modified for many other similar services. Remember you have a setting in these
+# apps where you tell it where the proxy is located for it to be able to find resources. 
+# In this case that blank would be filled in with /sonarr
+
+
+  proxy / dockerhost:32400 {
+    transparent
+  }
+  proxy /sonarr dockerhost:8989 {
+    transparent
+  }
+ 
+}
+ 
+#localhost block, typically this would have a duplicate of the above listed sites but this 
+#will remain blank in this config since it will be better filled later by using common.conf
+ 
+http://localhost {
+
+  ext .html .htm .php
+  root /caddy/www
+  
+  gzip
+ 
+}
+ 
+# this block would also access sonarr service but would do so as http://sonarr.domain.com
+# This option also requires additional steps at the DNS level to make sure sonarr.domain.com points at this server.
+# If this option is used in place of the above version there is no need to fill in the proxy setting as outlined above
+# If that setting remains then the site would not work as expected.
+
+### Remove the # at the begninning of the lines below to use this option
+# sonarr.domain.com {
+#  gzip
+# 
+#  proxy / 127.0.0.1:8989 {
+#    transparent
+#  }
+#}
+ 
