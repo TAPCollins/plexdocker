@@ -18,24 +18,24 @@ home.teratux.com {  #replace domain.com with your site
   proxy / dockerhost:32400 {
     transparent
   }
-  proxy /sonarr dockerhost:8989 {
+  proxy /tv dockerhost:8989 {
     transparent
   }
- 
+   proxy /movies dockerhost:7878 {
+    transparent
+  }
+  proxy /request dockerhost:3579 {
+    transparent
+  }
+  proxy /monitor dockerhost:8181 {
+    transparent
+  }
+  proxy /portainer dockerhost:9000 {
+    transparent
+  }
 }
  
-#localhost block, typically this would have a duplicate of the above listed sites but this 
-#will remain blank in this config since it will be better filled later by using common.conf
- 
-http://localhost {
 
-  ext .html .htm .php
-  root /caddy/www
-  
-  gzip
- 
-}
- 
 # this block would also access sonarr service but would do so as http://sonarr.domain.com
 # This option also requires additional steps at the DNS level to make sure sonarr.domain.com points at this server.
 # If this option is used in place of the above version there is no need to fill in the proxy setting as outlined above
