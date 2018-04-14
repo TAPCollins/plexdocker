@@ -114,37 +114,22 @@ services:
 #Media Server - Plex
   plexms:
     container_name: plexms
-    restart: unless-stopped
+    restart: always
     image: plexinc/pms-docker
     volumes:
       - ${USERDIR}/plexms/config:/config
       - ${USERDIR}/downloads/plex_tmp:/transcode
       - ${USERDIR}/media:/media
       - ${USERDIR}/docker/certs:/certs
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
-    ports:
-      - "32400:32400" 
-      - "3005:3005" 
-      - "8324:8324" 
-      - "32469:32469" 
-      - "1900:1900/udp" 
-      - "32410:32410/udp" 
-      - "32412:32412/udp" 
-      - "32413:32413/udp" 
-      - "32414:32414/udp" 
+    network_mode: host
     environment:
       - TZ=${TZ}
       - HOSTNAME="Docker Plex"
-      - PLEX_CLAIM="CLAIM-QSXDHGPUSWQFTQNJWPQN"
+      - PLEX_CLAIM="claim-xxxxxxxxxx"
       - PLEX_UID=${PUID}
       - PLEX_GID=${PGID}
       - ADVERTISE_IP="http://192.168.86.205:32400/"
-    labels:
-      - "traefik.enable=true"
-      - "traefik.port=32400"
-      - "traefik.frontend.rule=Host:plex.teratux.com"
+
 
 #Tautulli - Monitor Plex Usage
   tautulli:
